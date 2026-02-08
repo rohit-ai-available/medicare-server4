@@ -1,0 +1,27 @@
+var express=require("express");
+var appRouter=express.Router();
+var obj=require("../Controller/userController");
+var validateobj=require("../config/validate")
+appRouter.post("/signup",obj.dosignup);
+appRouter.post("/login",obj.dologin);
+appRouter.post("/doner",obj.DonerForm);
+appRouter.post("/donerupdate",obj.DonerUpdate);
+appRouter.post("/find",obj.donerfind);
+appRouter.post("/availmedi",obj.doavailmedi);
+appRouter.post("/availmediupdate",obj.doupdateAvailMedi);
+appRouter.post("/findtodo",obj.findtodo);
+// appRouter.post("/dodeletemedi",validateobj.validateTokenn2,obj.dodeletemedi);
+appRouter.post("/dodeletemedi",obj.dodeletemedi);
+appRouter.post("/needyrForm",obj.needyrForm);
+appRouter.post("/needyupdate",obj.needyupdate);
+appRouter.post("/picreader",obj.picreader);
+appRouter.post("/medifinder",obj.medifinder);
+appRouter.post("/fetchFinderData",obj.fetchFinderData);
+appRouter.post("/dochangePassword",obj.dochangePassword);
+appRouter.post("/doAvailEquipment",obj.doAvailEquipment);
+appRouter.post("/fetchcities",obj.fetchcities);
+appRouter.post("/fetchequipmentData",obj.fetchequipmentData);
+appRouter.post("/getcontact",obj.getcontact);
+appRouter.post("/getotp",obj.getotp);
+appRouter.post("/doverify",obj.doverify);
+module.exports=appRouter;
