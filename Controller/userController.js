@@ -4,6 +4,8 @@ var DonercolRef=require("../Model/donerModel")
 var AvailMediColRef=require("../Model/AvailMediModel")
 var NeedyColRef=require("../Model/needyModel")
 var AvailEquipColRef=require('../Model/availEquipment')
+var sgMail=require("@sendgrid/mail")
+sgMail.setApiKey(process.env.PASS)
 var jwt=require("jsonwebtoken")
 var bcrypt=require("bcrypt")
 var dotenv=require("dotenv")
@@ -546,23 +548,22 @@ function dologin(req,resp){
       otpStore[email] = otp;
 
     // Email transporter
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_ID,
-        pass: process.env.PASS, // Gmail App Password
-      },
+    await sgMail.send({
+     to:email,
+     from:process.env.EMAIL_ID,
+     subject:"your otp",
+     text:`your otp is ${otp}`
     });
 
      // Email message
-    const mailOptions = {
-      from: process.env.EMAIL_ID,
-      to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP is: ${otp}`,
-    };
+    // const mailOptions = {
+    //   from: process.env.EMAIL_ID,
+    //   to: email,
+    //   subject: "Your OTP Code",
+    //   text: `Your OTP is: ${otp}`,
+    // };
       // Send email
-    var info=await transporter.sendMail(mailOptions);
+    // var info=await transporter.sendMail(mailOptions);
    
     // console.log(info)
     resp.json({
