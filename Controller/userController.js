@@ -357,7 +357,7 @@ function dologin(req,resp){
   
   const genAI = new GoogleGenerativeAI(process.env.GEMINI);
   
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  const model = genAI.getGenerativeModel({ model: 'gemini-3-flash-preview', });
   
   async function RajeshBansalKaChirag(imgurl)
   {
@@ -624,6 +624,11 @@ function dologin(req,resp){
       })
     }
    }
+
+   function validate(req,resp){
+    console.log("hit++++++++++++++++++++++++")
+    return resp.json({msg:"okkkk"})
+   }
 module.exports={dosignup,dologin,DonerForm,DonerUpdate,donerfind,doavailmedi,doupdateAvailMedi,findtodo,
   dodeletemedi,needyrForm,needyupdate,picreader,medifinder,fetchFinderData,dochangePassword,doAvailEquipment,
-  fetchcities,fetchequipmentData,getcontact,getotp,doverify}
+  fetchcities,fetchequipmentData,getcontact,getotp,doverify,validate}

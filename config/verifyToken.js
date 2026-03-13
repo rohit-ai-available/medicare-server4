@@ -1,15 +1,15 @@
 var jwt = require("jsonwebtoken");
-function validateTokenn2(req,resp,next)
+function verifyToken(req,resp,next)
 {
         console.log("********")
        
        const full_token = req.headers['authorization'];//keyword
-        console.log(full_token);
+       // console.log(full_token);
     
         var ary=full_token.split(" ");
         let actualToken=ary[1];
         let TokenValidObj;
-        console.log(process.env.SEC_KEY)
+       // console.log(process.env.SEC_KEY)
     
         try{
             TokenValidObj= jwt.verify(actualToken,process.env.SEC_KEY);
@@ -21,17 +21,18 @@ function validateTokenn2(req,resp,next)
                 next();
                 //resp.json({status:true,msg:"**Aauthorized",item:payload});
             }
-            else
-            resp.json({status:false,msg:"**Invalid Token"});
-            
+            else{
+                console.log("error==========1")
+           return resp.json({status:false,msg:"**Invalid Token"});
+            }
             
         }
         catch(err)
         { 
-            console.log("pppp"+err.message)
-            resp.json({status:false,msg:err.message});
-            return;
+            console.log("pppp  "+err.message)
+           return resp.json({status:false,msg:err.message});
+         
         }
             
 }
-module.exports={validateTokenn2};
+module.exports={verifyToken};

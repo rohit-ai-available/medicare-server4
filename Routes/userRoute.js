@@ -1,7 +1,7 @@
 var express=require("express");
 var appRouter=express.Router();
 var obj=require("../Controller/userController");
-var validateobj=require("../config/validate")
+var verifyToken=require("../config/verifyToken")
 appRouter.post("/signup",obj.dosignup);
 appRouter.post("/login",obj.dologin);
 appRouter.post("/doner",obj.DonerForm);
@@ -24,4 +24,5 @@ appRouter.post("/fetchequipmentData",obj.fetchequipmentData);
 appRouter.post("/getcontact",obj.getcontact);
 appRouter.post("/getotp",obj.getotp);
 appRouter.post("/doverify",obj.doverify);
+appRouter.post("/dashboard",verifyToken.verifyToken,obj.validate);
 module.exports=appRouter;
