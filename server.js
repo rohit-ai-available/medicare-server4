@@ -5,6 +5,8 @@ var fileuploader=require("express-fileupload");
 var cors=require('cors'); 
 var dotenv=require("dotenv")
 dotenv.config()
+var dns=require("dns")
+dns.setServers(["1.1.1.1","8.8.8.8"])
 var nodemailer=require('nodemailer')
 const axios=require('axios')
 var cloudinary=require("cloudinary").v2;
