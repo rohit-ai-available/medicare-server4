@@ -19,8 +19,9 @@ var cloudinary=require("cloudinary").v2;
 var app=express()
 app.use(fileuploader());
 app.use(cors());
+app.use(express.json())
 /// generative ai key
-app.listen("2005",()=>{
+app.listen(2005,()=>{
     console.log("server started******* this site rohit======")
 
 })

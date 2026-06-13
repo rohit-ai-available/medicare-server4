@@ -10,6 +10,8 @@ var jwt=require("jsonwebtoken")
 var bcrypt=require("bcrypt")
 var dotenv=require("dotenv")
 dotenv.config()
+// API setup
+
 var nodemailer=require('nodemailer')
 var otpStore= {};
 var cloudinary2=require("cloudinary").v2;
@@ -18,7 +20,63 @@ var cloudinary2=require("cloudinary").v2;
     api_key:process.env.api_key,
     api_secret:process.env.api_secret,
 })
+// razorpay ============
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+const {Resend}=require('resend')
+// const resend=new Resend(process.env.Resend_key)
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 // functions start ====>
+// ROUTE 1: Create an Order
+async function order(req,resp){
+  console.log("payment ***-***")
+  console.log(req.body)
+  console.log( process.env.RAZORPAY_KEY_ID,)
+  console.log( process.env.RAZORPAY_KEY_SECRET)
+    try {
+        const options = {
+            amount: req.body.amount * 100, // amount in paise
+            currency: "INR",
+            receipt: `receipt_${Date.now()}`,
+        };
+
+        const order = await razorpay.orders.create(options);
+        
+        if (!order) return resp.status(500).send("Error creating order");
+        
+        resp.json(order);
+        console.log("order send ")
+    } catch (error) {
+      console.log("error")
+        resp.status(500).send(error);
+    }
+};
+// ROUTE 2: Verify Payment (The Security Check)
+async function ordervalidate(req,resp) {
+  console.log("do varify****")
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    // Create the expected signature using your Secret Key
+    const sha = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
+    sha.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+    const digest = sha.digest("hex");
+
+    // Compare our signature with Razorpay's signature
+    if (digest !== razorpay_signature) {
+      console.log("failed ***")
+        return resp.status(400).json({ msg: "Transaction is not legit!" });
+    }
+
+    resp.json({
+        msg: "Success",
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+    });
+};
+
 function dosignup(req,resp){
     console.log("recieved body")
     console.log(req.body)
@@ -163,7 +221,7 @@ function dologin(req,resp){
            var UserCol=new AvailMediColRef(req.body);
                  UserCol.save().then((docu)=>{
                   // let jsontoken=jwt.sign({email:req.body.email},process.env.SEC_KEY,{expiresIn:"1m"})
-                   resp.json({status:true,msg:"Record saved",obj:docu,token:jsontoken});
+                   resp.json({status:true,msg:"Record saved",obj:docu});
                  }).catch((err)=>{
                    resp.json({status:false,msg:err.message})
                  })
@@ -544,15 +602,36 @@ function dologin(req,resp){
     //console.log(email)
     const otp=Math.floor(100000 + Math.random() * 900000)
     console.log(otp)
-
+    console.log(process.env.EMAIL_ID)
+    console.log(process.env.BREVO_API_KEY)
       otpStore[email] = otp;
 
-    // Email transporter
-    await sgMail.send({
-     to:email,
-     from:process.env.EMAIL_ID,
-     subject:"your otp",
-      html: `
+                       let transporter = nodemailer.createTransport({
+                     host: "smtp-relay.brevo.com",
+                    port: 587,
+                      secure: false, // Must be false for port 587
+                         auth: {
+                 // 1. This MUST be your exact Brevo SMTP Username string (e.g., "ae92cc001@smtp-brevo.com")
+                   user: process.env.BREVO_EMAIL, 
+    
+                      // 2. This MUST be a valid "SMTP Key", NOT your Master Account Password or API Key v3
+                       pass: process.env.BREVO_API_KEY, 
+  },
+});
+          transporter.verify((error,success)=>{
+            if(error){
+              console.log("smtp error "+error)
+            }
+            else{
+              console.log("smtp success")
+            }
+        
+          })
+         const info=  await transporter.sendMail({
+            from:process.env.EMAIL_ID,
+            to:email,
+            subject:"Your OTP Code",
+            html:    `
 <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px; text-align: center;">
     <div style="max-width: 400px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
         
@@ -582,7 +661,62 @@ function dologin(req,resp){
     </div>
 </div>
 `
-    });
+           })
+         
+         ///  sending email using resend key
+    //   const {data, error}=await resend.emails.send({
+    //     from:"onboarding@resend.dev",
+    //     to:email,
+    //     subject:"Your OTP Code",
+    //     html: `<div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
+    //          <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; color: #4f46e5; letter-spacing: 8px;">
+    //                ${otp}
+    //        </span>
+    //        </div>`
+    //   })
+    //      if(error){
+    //       return resp.json({
+    //   success: false,
+    //   message: "Failed to send OTP",
+    //   error,
+    // });
+    //      }
+    // Email transporter
+//     await sgMail.send({
+//      to:email,
+//      from:process.env.EMAIL_ID,
+//      subject:"your otp",
+//       html: `
+// <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px; text-align: center;">
+//     <div style="max-width: 400px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+        
+//         <h2 style="color: #1e293b; font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.025em;">
+//             Verification Code
+//         </h2>
+//         <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">
+//             Please use the following code to complete your verification.
+//         </p>
+
+//         <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
+//             <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; color: #4f46e5; letter-spacing: 8px;">
+//                 ${otp}
+//             </span>
+//         </div>
+
+//         <p style="color: #94a3b8; font-size: 12px; line-height: 1.5;">
+//             This code will expire in 10 minutes.<br>
+//             If you did not request this code, please ignore this email.
+//         </p>
+        
+//         <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+//             <span style="font-size: 12px; color: #cbd5e1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+//                 Secure Portal Access
+//             </span>
+//         </div>
+//     </div>
+// </div>
+// `
+//     });
 
      // Email message
     // const mailOptions = {
@@ -595,12 +729,12 @@ function dologin(req,resp){
     // var info=await transporter.sendMail(mailOptions);
    
     // console.log(info)
-    resp.json({
+   return resp.json({
       success: true,
       message: "OTP sent successfully to your email!",
     });
    } catch (error) {
-    resp.json({
+    return resp.json({
       success: false,
       message: "Failed to send OTP",
       error,
@@ -660,4 +794,4 @@ function dologin(req,resp){
    }
 module.exports={dosignup,dologin,DonerForm,DonerUpdate,donerfind,doavailmedi,doupdateAvailMedi,findtodo,
   dodeletemedi,needyrForm,needyupdate,picreader,medifinder,fetchFinderData,dochangePassword,doAvailEquipment,
-  fetchcities,fetchequipmentData,getcontact,getotp,doverify,validate}
+  fetchcities,fetchequipmentData,getcontact,getotp,doverify,validate,order,ordervalidate}

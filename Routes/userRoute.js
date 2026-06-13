@@ -25,4 +25,7 @@ appRouter.post("/getcontact",obj.getcontact);
 appRouter.post("/getotp",obj.getotp);
 appRouter.post("/doverify",obj.doverify);
 appRouter.post("/dashboard",verifyToken.verifyToken,obj.validate);
+appRouter.post("/order",obj.order);
+appRouter.post("/ordervalidate",obj.ordervalidate);
+
 module.exports=appRouter;
