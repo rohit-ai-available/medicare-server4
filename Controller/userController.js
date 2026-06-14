@@ -736,6 +736,7 @@ function dologin(req,resp){
       message: "OTP sent successfully to your email!",
     });
    } catch (error) {
+    console.log(error)
     return resp.json({
       success: false,
       message: "Failed to send OTP",
