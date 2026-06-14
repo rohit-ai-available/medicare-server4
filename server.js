@@ -23,6 +23,8 @@ app.use(express.json())
 /// generative ai key
 app.listen(2005,()=>{
     console.log("server started******* this site rohit======")
+    console.log("Brevo Key Configured:", process.env.BREVO_API_KEY ? "YES" : "NO");
+     console.log("Brevo Key Configured:", process.env.BREVO_EMAIL ? "YES" : "NO");
 
 })
 let mongodbUrlAtlas=process.env.atlaurl;

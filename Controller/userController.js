@@ -618,15 +618,15 @@ function dologin(req,resp){
                        pass: process.env.BREVO_API_KEY, 
   },
 });
-          transporter.verify((error,success)=>{
-            if(error){
-              console.log("smtp error "+error)
-            }
-            else{
-              console.log("smtp success")
-            }
+          // transporter.verify((error,success)=>{
+          //   if(error){
+          //     console.log("smtp error "+error)
+          //   }
+          //   else{
+          //     console.log("smtp success")
+          //   }
         
-          })
+          // })
          const info=  await transporter.sendMail({
             from:process.env.EMAIL_ID,
             to:email,
