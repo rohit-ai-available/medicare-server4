@@ -11,7 +11,7 @@ var bcrypt=require("bcrypt")
 var dotenv=require("dotenv")
 dotenv.config()
 // API setup
-const axios = require('axios');
+
 var nodemailer=require('nodemailer')
 var otpStore= {};
 var cloudinary2=require("cloudinary").v2;
@@ -593,28 +593,45 @@ function dologin(req,resp){
     }
 
     //get otp
-   async function getotp(req, resp) {
-  console.log("Recipient Email:", req.body.email);
+     async function getotp(req,resp){
+   // console.log(process.env.EMAIL_ID)
+    console.log(req.body.email)
+   
+    try {
+    const {email}=req.body;
+    //console.log(email)
+    const otp=Math.floor(100000 + Math.random() * 900000)
+    console.log(otp)
+      otpStore[email] = otp;
 
-  try {
-    const { email } = req.body;
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    console.log("Generated OTP:", otp);
+                       let transporter = nodemailer.createTransport({
+                     host: "smtp-relay.brevo.com",
+                    port: 2525,
+                      secure: false, // Must be false for port 587
+                         auth: {
+                 // 1. This MUST be your exact Brevo SMTP Username string (e.g., "ae92cc001@smtp-brevo.com")
+                   user: process.env.BREVO_EMAIL, 
     
-    otpStore[email] = otp;
-
-    // Sending email via Brevo HTTP API instead of Nodemailer SMTP
-    await axios.post(
-      'https://api.brevo.com/v3/smtp/email',
-      {
-        sender: { 
-          email: process.env.EMAIL_ID // Must be verified in Brevo
-        },
-        to: [
-          { email: email }
-        ],
-        subject: "Your OTP Code",
-        htmlContent: `
+                      // 2. This MUST be a valid "SMTP Key", NOT your Master Account Password or API Key v3
+                       pass: process.env.BREVO_API_KEY, 
+  },
+                      tls: {
+    rejectUnauthorized: false
+  },
+   connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000
+});
+              
+transporter.verify()
+  .then(() => console.log("SMTP READY"))
+  .catch(err => console.log("SMTP FAILED:", err));
+       
+         const info=  await transporter.sendMail({
+            from:process.env.EMAIL_ID,
+            to:email,
+            subject:"Your OTP Code",
+            html:    `
 <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px; text-align: center;">
     <div style="max-width: 400px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
         
@@ -644,36 +661,86 @@ function dologin(req,resp){
     </div>
 </div>
 `
-      },
-      {
-        headers: {
-          'accept': 'application/json',
-          'api-key': process.env.BREVO_API_KEY, // Use your regular API v3 key here
-          'content-type': 'application/json'
-        }
-      }
-    );
+           })
+         
+         ///  sending email using resend key
+    //   const {data, error}=await resend.emails.send({
+    //     from:"onboarding@resend.dev",
+    //     to:email,
+    //     subject:"Your OTP Code",
+    //     html: `<div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
+    //          <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; color: #4f46e5; letter-spacing: 8px;">
+    //                ${otp}
+    //        </span>
+    //        </div>`
+    //   })
+    //      if(error){
+    //       return resp.json({
+    //   success: false,
+    //   message: "Failed to send OTP",
+    //   error,
+    // });
+    //      }
+    // Email transporter
+//     await sgMail.send({
+//      to:email,
+//      from:process.env.EMAIL_ID,
+//      subject:"your otp",
+//       html: `
+// <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px; text-align: center;">
+//     <div style="max-width: 400px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+        
+//         <h2 style="color: #1e293b; font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.025em;">
+//             Verification Code
+//         </h2>
+//         <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">
+//             Please use the following code to complete your verification.
+//         </p>
 
-    return resp.json({
+//         <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
+//             <span style="font-family: 'Courier New', monospace; font-size: 36px; font-weight: 700; color: #4f46e5; letter-spacing: 8px;">
+//                 ${otp}
+//             </span>
+//         </div>
+
+//         <p style="color: #94a3b8; font-size: 12px; line-height: 1.5;">
+//             This code will expire in 10 minutes.<br>
+//             If you did not request this code, please ignore this email.
+//         </p>
+        
+//         <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+//             <span style="font-size: 12px; color: #cbd5e1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+//                 Secure Portal Access
+//             </span>
+//         </div>
+//     </div>
+// </div>
+// `
+//     });
+
+     // Email message
+    // const mailOptions = {
+    //   from: process.env.EMAIL_ID,
+    //   to: email,
+    //   subject: "Your OTP Code",
+    //   text: `Your OTP is: ${otp}`,
+    // };
+      // Send email
+    // var info=await transporter.sendMail(mailOptions);
+   
+    // console.log(info)
+   return resp.json({
       success: true,
       message: "OTP sent successfully to your email!",
     });
-
-  } catch (error) {
-    // Enhanced error logging to capture the detailed API response if it fails
-    if (error.response) {
-      console.error("Brevo API Error Data:", error.response.data);
-    } else {
-      console.error("System Error:", error.message);
-    }
-
+   } catch (error) {
     return resp.json({
       success: false,
       message: "Failed to send OTP",
-      error: error.response ? error.response.data : error.message,
+      error,
     });
-  }
-}
+  } 
+   }
 
     // do verify 
    function doverify(req,resp){
