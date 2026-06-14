@@ -606,20 +606,19 @@ function dologin(req,resp){
 
                        let transporter = nodemailer.createTransport({
                      host: "smtp-relay.brevo.com",
-                    port: 587,
-                      secure: false, // Must be false for port 587
+                    port: 465,
+                      secure: true, // Must be false for port 587
                          auth: {
-                 // 1. This MUST be your exact Brevo SMTP Username string (e.g., "ae92cc001@smtp-brevo.com")
                    user: process.env.BREVO_EMAIL, 
-    
-                      // 2. This MUST be a valid "SMTP Key", NOT your Master Account Password or API Key v3
                        pass: process.env.BREVO_API_KEY, 
-  },
-  // Add this to handle stricter production server SSL negotiations
-  tls: {
-    rejectUnauthorized: false
-  }
-});
+                           },
+                          tls: {
+                         rejectUnauthorized: false, // Ensures Render doesn't drop the handshake
+                     minVersion: 'TLSv1.2'
+                         },
+                       connectionTimeout: 10000, // Wait up to 10 seconds before timing out
+                      greetingTimeout: 10000
+                        });
           // transporter.verify((error,success)=>{
           //   if(error){
           //     console.log("smtp error "+error)
