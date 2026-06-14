@@ -602,8 +602,6 @@ function dologin(req,resp){
     //console.log(email)
     const otp=Math.floor(100000 + Math.random() * 900000)
     console.log(otp)
-    console.log(process.env.EMAIL_ID)
-    console.log(process.env.BREVO_API_KEY)
       otpStore[email] = otp;
 
                        let transporter = nodemailer.createTransport({
@@ -617,6 +615,10 @@ function dologin(req,resp){
                       // 2. This MUST be a valid "SMTP Key", NOT your Master Account Password or API Key v3
                        pass: process.env.BREVO_API_KEY, 
   },
+  // Add this to handle stricter production server SSL negotiations
+  tls: {
+    rejectUnauthorized: false
+  }
 });
           // transporter.verify((error,success)=>{
           //   if(error){
