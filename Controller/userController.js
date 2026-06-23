@@ -83,16 +83,40 @@ async function dosignup(req,resp){
        console.log("recieved body")
     //  logger.info("Signup request received");
        const {email,password,userType} = req.body;
-
+       
    const token = crypto.randomBytes(32).toString("hex");
-    const user = await userColRef.create({
+      const check=await userColRef.findOne({email:email})
+      console.log(check)
+      if(check){
+      if(check.isVerified==true){
+        console.log("yess verify")
+        return resp.json({
+    message:"already registered"
+  });
+      }
+      
+      else{
+        console.log("not verify")
+          await userColRef.findOneAndDelete({email:email})
+          const user = await userColRef.create({
     email,
     password,
     userType,
     verifyToken: token
   });
-
-  console.log("here  *********"+process.env.BREVO_API_KEY)
+      }
+    }
+    if(check==null){
+      console.log("empty")
+         const user = await userColRef.create({
+    email,
+    password,
+    userType,
+    verifyToken: token
+  });
+    }
+        
+  console.log("here  *********")
     const verifyLink = `https://medicare-server4.onrender.com/user/verify/${token}`;
                 let transporter = nodemailer.createTransport({
                      host: "smtp-relay.brevo.com",
@@ -159,7 +183,7 @@ transporter.verify()
 </div>
 `
            }) 
-       resp.json({
+     return  resp.json({
     message:"verification email sent"
   });
    // resp.send("signup successfully********")
