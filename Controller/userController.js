@@ -203,9 +203,102 @@ async function verifyEmail(req,res){
     await user.save();
 
 
-    res.json({
-      message:"email verified successfully"
-    });
+   app.get('/user/verify', async (req, res) => {
+  try {
+    // 1. Put your existing token/database validation logic here
+    // Example: const user = await User.findOne({ token: req.query.token });
+    
+    // 2. Set response header to return readable HTML
+    res.setHeader('Content-Type', 'text/html');
+
+    // 3. Send the updated responsive HTML page pointing to your Netlify route
+    return res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verification Successful</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #ffffff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+    .icon-container {
+      background-color: #e8f5e9;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto 24px;
+    }
+    .icon {
+      color: #2e7d32;
+      font-size: 40px;
+      font-weight: bold;
+    }
+    h1 { color: #333333; font-size: 24px; margin-bottom: 12px; }
+    p { color: #666666; font-size: 16px; line-height: 1.5; margin-bottom: 24px; }
+    .redirect-text {
+      font-size: 14px;
+      color: #999999;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="icon-container">
+      <span class="icon">✓</span>
+    </div>
+    <h1>Email Verified!</h1>
+    <p>Your email address has been successfully verified.</p>
+    <p class="redirect-text">Taking you back to Medicare in <span id="countdown">4</span> seconds...</p>
+  </div>
+
+  <script>
+    let seconds = 4;
+    const countdownEl = document.getElementById('countdown');
+    
+    const interval = setInterval(() => {
+      seconds--;
+      if (seconds >= 0) {
+        countdownEl.textContent = seconds;
+      }
+    }, 1000);
+
+    // Redirecting accurately to your live Netlify frontend login page
+    setTimeout(() => {
+      clearInterval(interval);
+      window.location.href = "https://medicare-rohit-available.netlify.app/login?verified=true"; 
+    }, 4000);
+  </script>
+
+</body>
+</html>
+    `);
+  } catch (error) {
+    console.error("Verification error:", error);
+    return res.status(500).send("Internal server error during verification.");
+  }
+});
 
 
   }catch(error){
