@@ -1,4 +1,5 @@
 var express=require("express")
+const morgan = require("morgan");
 var userRoute=require("./Routes/userRoute");
 var mongoose=require("mongoose");
 var fileuploader=require("express-fileupload");
@@ -17,11 +18,13 @@ var cloudinary=require("cloudinary").v2;
 })
 
 var app=express()
+const http = require('http').createServer(app); // 1. Create HTTP server
+app.use(morgan("dev"));
 app.use(fileuploader());
 app.use(cors());
 app.use(express.json())
 /// generative ai key
-app.listen(2005,()=>{
+app.listen(2005, "0.0.0.0",()=>{
     console.log("server started******* this site rohit======")
 
 })

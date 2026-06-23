@@ -1,11 +1,28 @@
 var mongoose=require("mongoose");
 var userScheema=mongoose.Schema;
-var userColSchema={
-    email:{type:String , required:true,index:true,unique:true},
+var userColSchema = {
+    email: {
+        type:String,
+        required:true,
+        index:true,
+        unique:true
+    },
     password: String,
-    dos:{type:Date, default:Date.now},
-    userType:String
-};
+    dos: {
+        type:Date,
+        default:Date.now
+    },
+    userType:String,
+
+    isVerified: {
+        type:Boolean,
+        default:false
+    },
+
+    verifyToken: {
+        type:String
+    }
+}
 var ver={
     versionkey:false  // to avoid __v fieild in table come by default
 }

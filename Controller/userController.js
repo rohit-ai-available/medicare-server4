@@ -5,14 +5,15 @@ var AvailMediColRef=require("../Model/AvailMediModel")
 var NeedyColRef=require("../Model/needyModel")
 var AvailEquipColRef=require('../Model/availEquipment')
 var sgMail=require("@sendgrid/mail")
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // Make sure this is in your .env file
 sgMail.setApiKey(process.env.PASS)
 var jwt=require("jsonwebtoken")
 var bcrypt=require("bcrypt")
 var dotenv=require("dotenv")
 dotenv.config()
 // API setup
-
-var nodemailer=require('nodemailer')
+const logger = require("../utils/logger");
 var otpStore= {};
 var cloudinary2=require("cloudinary").v2;
  cloudinary2.config({
@@ -20,10 +21,11 @@ var cloudinary2=require("cloudinary").v2;
     api_key:process.env.api_key,
     api_secret:process.env.api_secret,
 })
+const {Resend}=require('resend')
 // razorpay ============
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const {Resend}=require('resend')
+
 // const resend=new Resend(process.env.Resend_key)
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -77,19 +79,144 @@ async function ordervalidate(req,resp) {
     });
 };
 
-function dosignup(req,resp){
-    console.log("recieved body")
-    console.log(req.body)
+async function dosignup(req,resp){
+       console.log("recieved body")
+    //  logger.info("Signup request received");
+       const {email,password,userType} = req.body;
+
+   const token = crypto.randomBytes(32).toString("hex");
+    const user = await userColRef.create({
+    email,
+    password,
+    userType,
+    verifyToken: token
+  });
+
+  console.log("here  *********"+process.env.BREVO_API_KEY)
+    const verifyLink = `https://medicare-server4.onrender.com/user/verify/${token}`;
+                let transporter = nodemailer.createTransport({
+                     host: "smtp-relay.brevo.com",
+                    port: 2525,
+                      secure: false, // Must be false for port 587
+                         auth: {
+                 // 1. This MUST be your exact Brevo SMTP Username string (e.g., "ae92cc001@smtp-brevo.com")
+                   user: process.env.BREVO_EMAIL, 
+    
+                      // 2. This MUST be a valid "SMTP Key", NOT your Master Account Password or API Key v3
+                       pass: process.env.BREVO_API_KEY, 
+  },
+                      tls: {
+    rejectUnauthorized: false
+  },
+   connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000
+});
+              
+transporter.verify()
+  .then(() => console.log("SMTP READY"))
+  .catch(err => console.log("SMTP FAILED:", err));
+       
+         const info=  await transporter.sendMail({
+            from:process.env.EMAIL_ID,
+            to:email,
+            subject:"Your OTP Code",
+            html:    `
+<div style="font-family: Arial, sans-serif; background-color: #f8fafc; padding: 40px; text-align: center;">
+    <div style="max-width: 400px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 16px; border: 1px solid #e2e8f0;">
+        
+        <h2 style="color: #1e293b; font-size: 22px; font-weight: 700;">
+            Verify Your Email
+        </h2>
+
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 25px;">
+            Thank you for creating an account. Please click the button below to verify your email address.
+        </p>
+
+        <a href="${verifyLink}" 
+           style="display:inline-block; 
+                  background:#4f46e5; 
+                  color:white; 
+                  padding:14px 25px; 
+                  border-radius:8px; 
+                  text-decoration:none;
+                  font-weight:600;">
+            Verify Email
+        </a>
+
+        <p style="color:#94a3b8; font-size:12px; margin-top:25px;">
+            This verification link will expire soon.<br>
+            If you did not create this account, please ignore this email.
+        </p>
+
+        <div style="margin-top:24px; padding-top:20px; border-top:1px solid #f1f5f9;">
+            <span style="font-size:12px; color:#cbd5e1; font-weight:600;">
+                Secure Portal Access
+            </span>
+        </div>
+
+    </div>
+</div>
+`
+           }) 
+       resp.json({
+    message:"verification email sent"
+  });
    // resp.send("signup successfully********")
-    let userRef=userColRef(req.body)
-    userRef.save().then((docu)=>{
-      console.log("+++++")
-        resp.json({status:true,msg:"Record saved",obj:docu})
-    }).catch((err)=>{
-         resp.json({status:false,msg:err.message})
-    })
+    // let userRef=userColRef(req.body)
+    // userRef.save().then((docu)=>{
+    //   console.log("+++++")
+    //    logger.info("New user registered successfully");
+    //     resp.json({status:true,msg:"Record saved",obj:docu})
+    // }).catch((err)=>{
+    //     logger.error(`Signup failed: ${err.message}`);
+    //      resp.json({status:false,msg:err.message})
+    // })
      
 }
+// email verification   
+     
+async function verifyEmail(req,res){
+        console.log("entered *****")
+  try{
+
+    const {token} = req.params;
+
+    console.log("Token from URL:", token);
+    const user = await userColRef.findOne({
+      verifyToken: token
+    });
+     
+
+    if(!user){
+      console.log("invalid verification link")
+      return res.status(400).json({
+        message:"invalid verification link"
+      });
+    }
+
+     console.log("token found ********")
+    user.isVerified = true;
+    user.verifyToken = undefined;
+
+
+    await user.save();
+
+
+    res.json({
+      message:"email verified successfully"
+    });
+
+
+  }catch(error){
+
+    res.status(500).json({
+      message:"server error"
+    });
+
+  }
+
+};
 
 function dologin(req,resp){
        console.log(req.body)
@@ -792,6 +919,171 @@ transporter.verify()
     console.log("hit++++++++++++++++++++++++")
     return resp.json({msg:"okkkk"})
    }
-module.exports={dosignup,dologin,DonerForm,DonerUpdate,donerfind,doavailmedi,doupdateAvailMedi,findtodo,
+
+   const registerUser = async (req, res) => {
+  try {
+
+    // user registration code
+
+    logger.info("New user registered successfully");
+
+    res.status(201).json({
+      message: "User registered"
+    });
+
+  } catch (error) {
+
+    logger.error(error.message);
+
+    res.status(500).json({
+      message: "Server error"
+    });
+  }
+};
+
+///google-login
+function googlelogin(req, resp) {
+  console.log("/google-login*********");
+  console.log(req.body);
+
+  const { credential } = req.body;
+
+  if (!credential) {
+    return resp.json({ status: false, msg: "Google token is missing" });
+  }
+
+  // 1. Verify the Google token
+  client.verifyIdToken({
+    idToken: credential,
+    audience: process.env.GOOGLE_CLIENT_ID, 
+  })
+  .then((ticket) => {
+    const payload = ticket.getPayload();
+    const googleEmail = payload.email;
+    const googleName = payload.name;
+
+    console.log("Google user verified:", googleEmail);
+
+    // 2. Look for the user in MongoDB using just their email
+    return userColRef.findOne({ email: googleEmail }).then((docu) => {
+      if (docu != null) {
+        // User exists! Proceed to sign them in
+        console.log("find =====>");
+        let jsontoken = jwt.sign({ email: googleEmail }, process.env.SEC_KEY, { expiresIn: "1h" });
+        resp.json({ status: true, msg: "Login successfully", obj: docu, token: jsontoken });
+      } else {
+        // User doesn't exist! Create a new account for them instantly
+        console.log("not find, creating new user =====>");
+        
+        const newUser = {
+          name: googleName,
+          email: googleEmail,
+          userType: "donor", // Default type so your React frontend layout functions correctly
+          isVerified: true
+        };
+
+        return userColRef.insertOne(newUser).then((result) => {
+          // If you are using Mongoose, change .insertOne to .create
+          // Fetch the newly created user to send it back to the frontend
+          return userColRef.findOne({ email: googleEmail }).then((newDocu) => {
+            let jsontoken = jwt.sign({ email: googleEmail }, process.env.SEC_KEY, { expiresIn: "1h" });
+            resp.json({ status: true, msg: "Account created and logged in!", obj: newDocu, token: jsontoken });
+          });
+        });
+      }
+    });
+  })
+  .catch((err) => {
+    console.log("error =====>");
+    console.error(err);
+    resp.json({ status: false, msg: "Google Auth failed: " + err.message });
+  });
+}
+
+// notification 
+   const nodemailer = require('nodemailer');
+
+async function requestmedicine(req, resp) {
+  console.log(req.body);
+  console.log("**************");
+  
+  const { medicineName, needyEmail, donorEmail } = req.body;
+
+  // 1. Initialize the transporter
+  let transporter = nodemailer.createTransport({
+    host: "smtp-relay.brevo.com",
+    port: 2525,
+    secure: false, 
+    auth: {
+      user: process.env.BREVO_EMAIL, 
+      pass: process.env.BREVO_API_KEY, 
+    },
+    tls: {
+      rejectUnauthorized: false
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000
+  });
+
+  try {
+    // 2. Verify connection configuration (Optional but good for debugging)
+    await transporter.verify();
+    console.log("SMTP READY");
+
+    // 3. Send the email
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_ID, // Your verified sender email
+      to: donorEmail,             // Sending it to the donor to notify them
+      subject: `Medicine Request: ${medicineName}`,
+      html: `
+        <div style="font-family: 'Inter', Arial, sans-serif; background-color: #f8fafc; padding: 40px; text-align: center;">
+            <div style="max-width: 450px; margin: 0 auto; background: #ffffff; padding: 32px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+                
+                <h2 style="color: #1e293b; font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.025em;">
+                    Medicine Requested!
+                </h2>
+                <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">
+                    Someone has requested a medicine you listed.
+                </p>
+
+                <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px; text-align: left;">
+                    <p style="margin: 4px 0; color: #334155; font-size: 14px;"><strong>Medicine:</strong> ${medicineName}</p>
+                    <p style="margin: 4px 0; color: #334155; font-size: 14px;"><strong>Requester:</strong> ${needyEmail}</p>
+                </div>
+
+                <p style="color: #94a3b8; font-size: 12px; line-height: 1.5;">
+                    Please coordinate with the recipient via their email to arrange delivery.<br>
+                    Thank you for your generosity!
+                </p>
+                
+                <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+                    <span style="font-size: 12px; color: #cbd5e1; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                        Medicine Donation Network
+                    </span>
+                </div>
+            </div>
+        </div>
+      `
+    });
+
+    console.log("Email sent successfully:", info.messageId);
+    
+    // 4. Respond back to the frontend/client
+    return resp.status(200).json({ 
+      success: true, 
+      message: "Medicine request email sent successfully!" 
+    });
+
+  } catch (error) {
+    console.error("SMTP or Mail Sending FAILED:", error);
+    
+    return resp.status(500).json({ 
+      success: false, 
+      message: "Failed to send medicine request email." 
+    });
+  }
+}
+module.exports={dosignup,verifyEmail,dologin,DonerForm,DonerUpdate,donerfind,doavailmedi,doupdateAvailMedi,findtodo,
   dodeletemedi,needyrForm,needyupdate,picreader,medifinder,fetchFinderData,dochangePassword,doAvailEquipment,
-  fetchcities,fetchequipmentData,getcontact,getotp,doverify,validate,order,ordervalidate}
+  fetchcities,fetchequipmentData,getcontact,getotp,doverify,validate,order,ordervalidate,registerUser,googlelogin,requestmedicine}

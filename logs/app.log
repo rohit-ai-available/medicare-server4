@@ -1,0 +1,12 @@
+info: Signup request received
+error: Signup failed: E11000 duplicate key error collection: medicareDB.usercollectionnews index: email_1 dup key: { email: "rohit@gmail.com" }
+info: Signup request received
+info: New user registered successfully
+info: Signup request received
+info: New user registered successfully
+info: Signup request received
+info: New user registered successfully
+info: Signup request received
+info: Signup request received
+info: Signup request received
+info: Signup request received

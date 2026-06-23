@@ -2,7 +2,9 @@ var express=require("express");
 var appRouter=express.Router();
 var obj=require("../Controller/userController");
 var verifyToken=require("../config/verifyToken")
+console.log("**************")
 appRouter.post("/signup",obj.dosignup);
+appRouter.get("/verify/:token",obj.verifyEmail);
 appRouter.post("/login",obj.dologin);
 appRouter.post("/doner",obj.DonerForm);
 appRouter.post("/donerupdate",obj.DonerUpdate);
@@ -27,5 +29,7 @@ appRouter.post("/doverify",obj.doverify);
 appRouter.post("/dashboard",verifyToken.verifyToken,obj.validate);
 appRouter.post("/order",obj.order);
 appRouter.post("/ordervalidate",obj.ordervalidate);
+appRouter.post("/google-login",obj.googlelogin);
+appRouter.post("/requestmedicine",obj.requestmedicine);
 
 module.exports=appRouter;
