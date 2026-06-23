@@ -188,19 +188,19 @@ async function verifyEmail(req,res){
     });
      
 
-    // if(!user){
-    //   console.log("invalid verification link")
-    //   return res.status(400).json({
-    //     message:"invalid verification link"
-    //   });
-    // }
+    if(!user){
+      console.log("invalid verification link")
+      return res.status(400).json({
+        message:"invalid verification link"
+      });
+    }
 
-    //  console.log("token found ********")
-    // user.isVerified = true;
-    // user.verifyToken = undefined;
+     console.log("token found ********")
+    user.isVerified = true;
+    user.verifyToken = undefined;
 
 
-    // await user.save();
+    await user.save();
 
     // 3. Send the updated responsive HTML page pointing to your Netlify route
     return res.send(`
