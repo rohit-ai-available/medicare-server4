@@ -188,28 +188,19 @@ async function verifyEmail(req,res){
     });
      
 
-    if(!user){
-      console.log("invalid verification link")
-      return res.status(400).json({
-        message:"invalid verification link"
-      });
-    }
+    // if(!user){
+    //   console.log("invalid verification link")
+    //   return res.status(400).json({
+    //     message:"invalid verification link"
+    //   });
+    // }
 
-     console.log("token found ********")
-    user.isVerified = true;
-    user.verifyToken = undefined;
-
-
-    await user.save();
+    //  console.log("token found ********")
+    // user.isVerified = true;
+    // user.verifyToken = undefined;
 
 
-   app.get('/user/verify', async (req, res) => {
-  try {
-    // 1. Put your existing token/database validation logic here
-    // Example: const user = await User.findOne({ token: req.query.token });
-    
-    // 2. Set response header to return readable HTML
-    res.setHeader('Content-Type', 'text/html');
+    // await user.save();
 
     // 3. Send the updated responsive HTML page pointing to your Netlify route
     return res.send(`
@@ -294,12 +285,6 @@ async function verifyEmail(req,res){
 </body>
 </html>
     `);
-  } catch (error) {
-    console.error("Verification error:", error);
-    return res.status(500).send("Internal server error during verification.");
-  }
-});
-
 
   }catch(error){
 
