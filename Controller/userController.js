@@ -80,23 +80,22 @@ async function ordervalidate(req,resp) {
 };
 
 async function dosignup(req,resp){
-       console.log("recieved body")
+       console.log("body Recieved")
     //  logger.info("Signup request received");
        const {email,password,userType} = req.body;
        
    const token = crypto.randomBytes(32).toString("hex");
       const check=await userColRef.findOne({email:email})
-      console.log(check)
       if(check){
       if(check.isVerified==true){
-        console.log("yess verify")
+        console.log("verified")
         return resp.json({
-    message:"already registered"
+    message:"Already Registered"
   });
       }
       
       else{
-        console.log("not verify")
+        console.log("Not verified")
           await userColRef.findOneAndDelete({email:email})
           const user = await userColRef.create({
     email,
@@ -1046,7 +1045,6 @@ transporter.verify()
 ///google-login
 function googlelogin(req, resp) {
   console.log("/google-login*********");
-  console.log(req.body);
 
   const { credential } = req.body;
 
@@ -1062,36 +1060,20 @@ function googlelogin(req, resp) {
   .then((ticket) => {
     const payload = ticket.getPayload();
     const googleEmail = payload.email;
-    const googleName = payload.name;
 
     console.log("Google user verified:", googleEmail);
 
     // 2. Look for the user in MongoDB using just their email
     return userColRef.findOne({ email: googleEmail }).then((docu) => {
       if (docu != null) {
-        // User exists! Proceed to sign them in
-        console.log("find =====>");
+        // User exists! Proceed to sign them in (Your frontend will handle the dashboard redirect)
+        console.log("User found =====>");
         let jsontoken = jwt.sign({ email: googleEmail }, process.env.SEC_KEY, { expiresIn: "1h" });
         resp.json({ status: true, msg: "Login successfully", obj: docu, token: jsontoken });
       } else {
-        // User doesn't exist! Create a new account for them instantly
-        console.log("not find, creating new user =====>");
-        
-        const newUser = {
-          name: googleName,
-          email: googleEmail,
-          userType: "donor", // Default type so your React frontend layout functions correctly
-          isVerified: true
-        };
-
-        return userColRef.insertOne(newUser).then((result) => {
-          // If you are using Mongoose, change .insertOne to .create
-          // Fetch the newly created user to send it back to the frontend
-          return userColRef.findOne({ email: googleEmail }).then((newDocu) => {
-            let jsontoken = jwt.sign({ email: googleEmail }, process.env.SEC_KEY, { expiresIn: "1h" });
-            resp.json({ status: true, msg: "Account created and logged in!", obj: newDocu, token: jsontoken });
-          });
-        });
+        // User doesn't exist! Block login and request signup
+        console.log("User not found, blocking login =====>");
+        resp.json({ status: false, msg: "Please signup" });
       }
     });
   })
